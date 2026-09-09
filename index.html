@@ -103,6 +103,19 @@ button.btn{font:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border
 button.btn.g{background:#fff;color:var(--paua)}
 button.btn.o{background:var(--carrot);border-color:var(--carrot);color:#2a1400}
 button.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.heroBtns{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:none}
+.dl{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:12.8px;font-weight:600;
+  border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);color:#fff;
+  padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.dl:hover{background:rgba(255,255,255,.2)}
+.dl:focus-visible{outline:2px solid var(--carrot);outline-offset:2px}
+.dl svg{width:15px;height:15px;flex:none}
+
+.credit{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;
+  border-top:1px solid var(--line);padding:14px 0 30px;font-size:12.5px;color:var(--shuttle)}
+.credit a{color:var(--paua);font-weight:600;text-decoration:none;border-bottom:1px solid #c3b6ea}
+.credit a:hover{border-bottom-color:var(--paua)}
+
 .foot{font-size:12.3px;color:var(--shuttle);max-width:82ch;padding-bottom:10px}
 
 .lnk{font:inherit;font-size:12.5px;font-weight:600;color:var(--paua);background:none;border:0;border-bottom:1px solid #c3b6ea;padding:0 0 1px;cursor:pointer;margin-left:auto;align-self:center}
@@ -129,7 +142,7 @@ button.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   body{background:#fff;font-size:11px}
   .hero,.verdict{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .hero{background:#230078 !important}
-  .lang,.acts,.lnk,.modal{display:none !important}
+  .lang,.acts,.lnk,.modal,.dl{display:none !important}
   .cols{grid-template-columns:1fr;padding-top:14px}
   aside{position:static}
   .card,.res{break-inside:avoid;border-color:#aaa}
@@ -146,9 +159,15 @@ button.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
       <h1><em id="h1a"></em> <span id="h1b"></span></h1>
       <p class="lede" id="lede"></p>
     </div>
-    <div class="lang">
-      <button id="btnEN" class="on" onclick="setLang('en')">ENG</button>
-      <button id="btnBS" onclick="setLang('bs')">BOS</button>
+    <div class="heroBtns">
+      <div class="lang">
+        <button id="btnEN" class="on" onclick="setLang('en')">ENG</button>
+        <button id="btnBS" onclick="setLang('bs')">BOS</button>
+      </div>
+      <button class="dl" id="bDl" onclick="downloadTool()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11m0 0l-4-4m4 4l4-4M4.5 18.5h15"/></svg>
+        <span id="bDlT"></span>
+      </button>
     </div>
   </div>
   <div class="meta"><input id="mDob"><input id="mUsl"><input id="mVla"><input id="mDat" type="date"></div>
@@ -160,6 +179,10 @@ button.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <section class="card"><header><h2 id="s2t"></h2><p id="s2d"></p></header><div class="body" id="params"></div></section>
   <section class="card"><header><h2 id="s3t"></h2><p id="s3d"></p></header><div class="body" id="trig"></div></section>
   <p class="foot" id="foot"></p>
+  <div class="credit">
+    <span id="creditL"></span>
+    <a href="https://www.linkedin.com/in/eramic/" target="_blank" rel="noopener">Emir Ramić on LinkedIn</a>
+  </div>
 </main>
 
 <aside>
@@ -219,6 +242,7 @@ const T={
   hObl:"Regulatory obligations",hSc:"Review scope",
   oblE:"Shown once section 1 is complete.",scE:"Shown once a review is required.",
   bPrint:"Print record",bCopy:"Copy summary",bClear:"Clear",copied:"Copied",select:"Select",
+  dl:"Download and run locally",dlDone:"Downloaded",creditL:"Free to use and adapt. No warranty, not legal advice.",
   waitA:"Not answered yet",waitW:"Answer the three questions in section 1.",
   incomplete:" Score is partial, not all parameters are answered.",
   noA:"No",noW:"Reassess once a year",
@@ -245,6 +269,7 @@ const T={
   hObl:"Regulatorne obaveze",hSc:"Obim pregleda",
   oblE:"Prikazuje se nakon sekcije 1.",scE:"Prikazuje se kada je pregled potreban.",
   bPrint:"Odštampaj zapis",bCopy:"Kopiraj sažetak",bClear:"Očisti",copied:"Kopirano",select:"Odaberite",
+  dl:"Preuzmi i pokreni lokalno",dlDone:"Preuzeto",creditL:"Slobodno za korištenje i prilagođavanje. Bez garancije, nije pravni savjet.",
   waitA:"Još nema odgovora",waitW:"Odgovorite na tri pitanja u sekciji 1.",
   incomplete:" Skor je nepotpun, nisu popunjeni svi parametri.",
   noA:"Ne",noW:"Ponovna procjena jednom godišnje",
@@ -486,6 +511,23 @@ const HOW={
   <p>Privilegovan pristup produkciji ili lični podaci klijenata stavljaju dobavljača u obuhvat bez obzira na skor. A bilo koji događaj iz sekcije 3 znači pregled odmah, pri čemu se skor uopšte ne gleda.</p>`}
 };
 
+function downloadTool(){
+  const c=document.documentElement.cloneNode(true);
+  ["gate","params","trig","obl","sc"].forEach(id=>{const e=c.querySelector("#"+id); if(e)e.innerHTML="";});
+  ["mDob","mUsl","mVla","mDat"].forEach(id=>{const e=c.querySelector("#"+id); if(e)e.removeAttribute("value");});
+  const m=c.querySelector("#how"); if(m){m.setAttribute("hidden","");m.querySelector("#howBody").innerHTML="";}
+  const v=c.querySelector("#verdict"); if(v)v.className="verdict v-none";
+  const r=c.querySelector("#res"); if(r)r.className="res s-none";
+  const blob=new Blob(["<!DOCTYPE html>\n"+c.outerHTML],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="ict-supplier-triage.html";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  const b=document.getElementById("bDlT"),o=b.textContent;
+  b.textContent=T[L].dlDone; setTimeout(()=>b.textContent=T[L].dl,1600);
+}
+
 function openHow(){
   document.getElementById("howT").textContent=HOW[L].title;
   document.getElementById("howBody").innerHTML=HOW[L].html;
@@ -511,9 +553,9 @@ function trgNode(t){
   return d;
 }
 function build(){
-  const g=document.getElementById("gate");GATE.forEach(q=>g.appendChild(qNode(q,false)));
-  const p=document.getElementById("params");PARAMS.forEach(q=>p.appendChild(qNode(q,true)));
-  const t=document.getElementById("trig");TRIGGERS.forEach(x=>t.appendChild(trgNode(x)));
+  const g=document.getElementById("gate");g.innerHTML="";GATE.forEach(q=>g.appendChild(qNode(q,false)));
+  const p=document.getElementById("params");p.innerHTML="";PARAMS.forEach(q=>p.appendChild(qNode(q,true)));
+  const t=document.getElementById("trig");t.innerHTML="";TRIGGERS.forEach(x=>t.appendChild(trgNode(x)));
   document.getElementById("mDat").value=new Date().toISOString().slice(0,10);
   setLang("en");
 }
@@ -534,6 +576,8 @@ function setLang(l){
   document.getElementById("bCopy").textContent=t.bCopy;
   document.getElementById("bClear").textContent=t.bClear;
   document.getElementById("bHow").textContent=HOW[l].link;
+  document.getElementById("bDlT").textContent=t.dl;
+  document.getElementById("creditL").textContent=t.creditL;
   if(!document.getElementById("how").hidden)openHow();
   GATE.concat(PARAMS).forEach(q=>{
     const n=document.querySelector('.q[data-qid="'+q.id+'"]');
