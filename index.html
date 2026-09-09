@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ICT supplier triage — on-site review decision under DORA</title>
+<style>
+:root{
+  --paua:#230078;--paua-2:#3a1aa3;--paua-3:#6b4fc4;
+  --carrot:#FF9835;--shuttle:#63666A;
+  --line:#dcdde1;--line-2:#ecedf0;--field:#f6f6f8;--paper:#fff;--ink:#1a1a20;--r:4px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--field);color:var(--ink);
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:1220px;margin:0 auto;padding:0 22px}
+
+.hero{background:linear-gradient(175deg,var(--paua) 0%,var(--paua-2) 55%,var(--paua-3) 100%);color:#fff;padding:28px 0 24px}
+.heroTop{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+h1{margin:0;font-size:25px;font-weight:650;letter-spacing:-.4px;line-height:1.2}
+h1 em{font-style:normal;color:var(--carrot)}
+.lede{margin:8px 0 0;font-size:13.5px;color:#e3ddf5;max-width:70ch}
+.lang{display:flex;background:rgba(255,255,255,.14);border-radius:999px;padding:3px;flex:none}
+.lang button{font:inherit;font-size:13px;font-weight:600;letter-spacing:.3px;border:0;background:none;color:#ddd6f3;padding:6px 18px;border-radius:999px;cursor:pointer}
+.lang button.on{background:var(--carrot);color:#2a1400}
+.lang button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.meta{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.meta input{font:inherit;font-size:13.5px;padding:8px 11px;border:1px solid rgba(255,255,255,.28);border-radius:var(--r);background:rgba(255,255,255,.1);color:#fff;min-width:190px}
+.meta input::placeholder{color:#c8bfe6}
+.meta input:focus{outline:2px solid var(--carrot);outline-offset:1px}
+
+.cols{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;padding:24px 0 80px}
+@media (max-width:1000px){.cols{grid-template-columns:1fr}}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);margin-bottom:18px;overflow:hidden}
+.card > header{padding:14px 20px 12px;border-bottom:1px solid var(--line-2);background:#fbfbfc}
+.card > header h2{margin:0;font-size:14px;font-weight:650;color:var(--paua)}
+.card > header p{margin:3px 0 0;font-size:12.8px;color:var(--shuttle);max-width:80ch}
+.card .body{padding:2px 20px 14px}
+
+.q{padding:15px 0;border-top:1px solid var(--line-2)}
+.q:first-child{border-top:0}
+.qhead{display:flex;justify-content:space-between;gap:14px;align-items:baseline}
+.qlab{font-size:15px;font-weight:600;line-height:1.4}
+.wt{font-size:11.5px;font-weight:600;color:var(--paua);background:#f0ecfb;padding:2px 8px;border-radius:999px;flex:none;font-variant-numeric:tabular-nums}
+.guide{margin:7px 0 10px;border-left:3px solid var(--carrot);padding:1px 0 1px 11px}
+.guide p{margin:0;font-size:13px;color:#43434c}
+.reg{display:inline-block;margin-top:5px;font-size:11.8px;color:var(--paua);background:#f4f1fd;border:1px solid #e2dcf7;padding:1px 7px;border-radius:var(--r)}
+select{font:inherit;font-size:14px;width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--field);color:var(--ink)}
+select:focus{outline:2px solid var(--carrot);outline-offset:1px;border-color:var(--carrot)}
+select.unset{color:var(--shuttle)}
+
+.trg{padding:12px 0;border-top:1px solid var(--line-2)}
+.trg:first-child{border-top:0}
+.trg label{display:flex;gap:11px;align-items:flex-start;cursor:pointer;font-size:14.5px;font-weight:600}
+.trg input{margin-top:3px;width:17px;height:17px;flex:none;accent-color:var(--carrot)}
+.trg .guide{margin:6px 0 0 28px}
+
+aside{position:sticky;top:20px}
+@media (max-width:1000px){aside{position:static}}
+.res{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 26px rgba(35,0,120,.13)}
+
+.verdict{padding:22px 22px 20px;color:#fff;transition:background .2s}
+.verdict .k{font-size:12.5px;color:rgba(255,255,255,.75);margin-bottom:14px}
+.vrow{display:flex;gap:14px;align-items:flex-start}
+.vico{width:46px;height:46px;flex:none;border-radius:999px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center}
+.vico svg{width:26px;height:26px;display:block;color:#fff}
+.ans{font-size:28px;font-weight:680;letter-spacing:-.6px;line-height:1.1}
+.when{display:inline-block;margin-top:8px;padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.2);font-size:13px;font-weight:600}
+.why{font-size:13px;color:rgba(255,255,255,.9);margin-top:12px}
+
+.v-none{background:#e9eaee;color:#3d3d46}
+.v-none .k{color:var(--shuttle)} .v-none .why{color:#55555e}
+.v-none .vico{background:#dcdee3} .v-none .vico svg{color:var(--shuttle)}
+.v-none .when{background:#dcdee3;color:var(--shuttle)}
+
+.v-no{background:linear-gradient(160deg,#5d6067 0%,#42454b 100%)}
+.v-plan{background:linear-gradient(160deg,#3f1cb0 0%,#230078 100%)}
+.v-now{background:linear-gradient(160deg,#FFA94D 0%,#F0810E 100%);color:#2d1500}
+.v-now .k{color:rgba(45,21,0,.7)} .v-now .why{color:rgba(45,21,0,.88)}
+.v-now .vico{background:rgba(45,21,0,.14)} .v-now .vico svg{color:#2d1500}
+.v-now .when{background:rgba(45,21,0,.16);color:#2d1500}
+
+.score{display:flex;align-items:baseline;gap:14px;padding:15px 22px}
+.score .n{font-size:40px;font-weight:680;color:var(--paua);font-variant-numeric:tabular-nums;letter-spacing:-1.8px;line-height:1;transition:color .2s}
+.score .t{font-size:12.5px;color:var(--shuttle)}
+.bar{height:8px;background:var(--line-2);margin:0 22px 16px;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--carrot);border-radius:99px;transition:width .25s,background .2s}
+.res.s-none .score .n{color:#b9bcc3} .res.s-none .bar i{background:#c9ccd2}
+.res.s-no .score .n{color:#4b4e54} .res.s-no .bar i{background:#6a6d74}
+.res.s-plan .score .n{color:var(--paua)} .res.s-plan .bar i{background:var(--paua-2)}
+.res.s-now .score .n{color:#d1700a} .res.s-now .bar i{background:var(--carrot)}
+
+.blk{padding:16px 22px;border-top:1px solid var(--line-2)}
+.blk h3{margin:0 0 10px;font-size:12.5px;font-weight:650;color:var(--paua)}
+.blk ul{margin:0;padding-left:18px}
+.blk li{font-size:13.2px;margin-bottom:8px}
+.blk li .a{color:var(--paua);font-weight:650}
+.blk p.em{margin:0;font-size:13.2px;color:var(--shuttle)}
+
+.acts{display:flex;gap:9px;padding:15px 22px;border-top:1px solid var(--line-2);flex-wrap:wrap}
+button.btn{font:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:var(--r);cursor:pointer;border:1px solid var(--paua);background:var(--paua);color:#fff}
+button.btn.g{background:#fff;color:var(--paua)}
+button.btn.o{background:var(--carrot);border-color:var(--carrot);color:#2a1400}
+button.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.foot{font-size:12.3px;color:var(--shuttle);max-width:82ch;padding-bottom:10px}
+
+.lnk{font:inherit;font-size:12.5px;font-weight:600;color:var(--paua);background:none;border:0;border-bottom:1px solid #c3b6ea;padding:0 0 1px;cursor:pointer;margin-left:auto;align-self:center}
+.lnk:hover{border-bottom-color:var(--paua)}
+.lnk:focus-visible{outline:2px solid var(--carrot);outline-offset:3px}
+
+.modal{position:fixed;inset:0;background:rgba(20,10,45,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal[hidden]{display:none}
+.sheet{background:#fff;border-radius:6px;max-width:560px;width:100%;max-height:86vh;overflow:auto;padding:26px 28px 28px;position:relative;box-shadow:0 20px 60px rgba(20,10,45,.4)}
+.sheet h3{margin:0 0 4px;font-size:19px;font-weight:650;color:var(--paua);letter-spacing:-.3px}
+.sheet h4{margin:20px 0 6px;font-size:13.5px;font-weight:650;color:var(--ink)}
+.sheet p{margin:0 0 10px;font-size:13.8px;color:#42424b}
+.sheet .x{position:absolute;top:12px;right:14px;font-size:24px;line-height:1;border:0;background:none;color:var(--shuttle);cursor:pointer;padding:4px 8px}
+.sheet .x:hover{color:var(--ink)}
+.wrow{display:flex;align-items:center;gap:10px;margin-bottom:5px;font-size:13px}
+.wrow .nm{width:44%;flex:none}
+.wrow .tr{flex:1;height:9px;background:var(--line-2);border-radius:99px;overflow:hidden}
+.wrow .tr i{display:block;height:100%;background:var(--paua-3);border-radius:99px}
+.wrow.top .tr i{background:var(--carrot)}
+.wrow.top{font-weight:650}
+.wrow .pc{width:34px;text-align:right;flex:none;color:var(--shuttle);font-variant-numeric:tabular-nums}
+
+@media print{
+  body{background:#fff;font-size:11px}
+  .hero,.verdict{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hero{background:#230078 !important}
+  .lang,.acts,.lnk,.modal{display:none !important}
+  .cols{grid-template-columns:1fr;padding-top:14px}
+  aside{position:static}
+  .card,.res{break-inside:avoid;border-color:#aaa}
+  select{-webkit-appearance:none;appearance:none;border:0;background:none;padding:0;font-weight:600}
+  .q,.trg{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="wrap">
+  <div class="heroTop">
+    <div>
+      <h1><em id="h1a"></em> <span id="h1b"></span></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang">
+      <button id="btnEN" class="on" onclick="setLang('en')">ENG</button>
+      <button id="btnBS" onclick="setLang('bs')">BOS</button>
+    </div>
+  </div>
+  <div class="meta"><input id="mDob"><input id="mUsl"><input id="mVla"><input id="mDat" type="date"></div>
+</div></div>
+
+<div class="wrap"><div class="cols">
+<main>
+  <section class="card"><header><h2 id="s1t"></h2><p id="s1d"></p></header><div class="body" id="gate"></div></section>
+  <section class="card"><header><h2 id="s2t"></h2><p id="s2d"></p></header><div class="body" id="params"></div></section>
+  <section class="card"><header><h2 id="s3t"></h2><p id="s3d"></p></header><div class="body" id="trig"></div></section>
+  <p class="foot" id="foot"></p>
+</main>
+
+<aside>
+  <div class="res s-none" id="res">
+    <div class="verdict v-none" id="verdict">
+      <div class="k" id="kQ"></div>
+      <div class="vrow">
+        <div class="vico" id="vico"></div>
+        <div>
+          <div class="ans" id="ans"></div>
+          <div class="when" id="when"></div>
+        </div>
+      </div>
+      <div class="why" id="why"></div>
+    </div>
+    <div class="score"><div class="n" id="scoreN">—</div><div class="t" id="scoreT"></div><button class="lnk" id="bHow" onclick="openHow()"></button></div>
+    <div class="bar"><i id="bar" style="width:0%"></i></div>
+    <div class="blk"><h3 id="hObl"></h3><ul id="obl"></ul><p class="em" id="oblE"></p></div>
+    <div class="blk"><h3 id="hSc"></h3><ul id="sc"></ul><p class="em" id="scE"></p></div>
+    <div class="acts">
+      <button class="btn o" onclick="window.print()" id="bPrint"></button>
+      <button class="btn g" onclick="copySummary(event)" id="bCopy"></button>
+      <button class="btn g" onclick="location.reload()" id="bClear"></button>
+    </div>
+  </div>
+</aside>
+</div></div>
+
+<div class="modal" id="how" hidden onclick="if(event.target===this)closeHow()">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="howT">
+    <button class="x" onclick="closeHow()" aria-label="Close">&times;</button>
+    <h3 id="howT"></h3>
+    <div id="howBody"></div>
+  </div>
+</div>
+
+<script>
+/* icons */
+const ICO={
+ none:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>',
+ no:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.3l2.6 2.6 5-5.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+ plan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" stroke-linecap="round"/><circle cx="12" cy="14.5" r="1.6" fill="currentColor" stroke="none"/></svg>',
+ now:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3.6l9 15.6H3z" stroke-linejoin="round"/><path d="M12 9.6v4.2" stroke-linecap="round"/><circle cx="12" cy="16.6" r="1.05" fill="currentColor" stroke="none"/></svg>'
+};
+
+/* UI strings */
+const T={
+ en:{h1a:"Before you visit.",h1b:"ICT supplier triage.",
+  lede:"Decide whether an ICT provider needs an on-site information security review, and see which DORA obligations follow.",
+  ph:["Provider","ICT service","Contract owner"],
+  s1t:"1. Scope gate",s1d:"If none of these three applies, no on-site review is needed.",
+  s2t:"2. Risk parameters",s2d:"Weighted average on a scale of 1 to 5. Access and data are scored once in section 1 and reused here.",
+  s3t:"3. Events that force a review",s3d:"Any event ticked here means a review now, whatever the score.",
+  foot:"Runs locally in the browser. Nothing leaves the device. The output supports the decision; scope and frequency are approved by the function that monitors the arrangement under Article 5(3) DORA.",
+  kQ:"Does this provider need an on-site review?",
+  scoreT:"weighted risk score<br>scale 1 to 5",
+  hObl:"Regulatory obligations",hSc:"Review scope",
+  oblE:"Shown once section 1 is complete.",scE:"Shown once a review is required.",
+  bPrint:"Print record",bCopy:"Copy summary",bClear:"Clear",copied:"Copied",select:"Select",
+  waitA:"Not answered yet",waitW:"Answer the three questions in section 1.",
+  incomplete:" Score is partial, not all parameters are answered.",
+  noA:"No",noW:"Reassess once a year",
+  noWhy:"The service does not support a critical or important function, there is no privileged access and no customer personal data. Assurance rests on contractual reporting and certificates.",
+  minA:"No",minW:"Certificates and reports are enough",
+  minWhy:"Low risk score with current independent assurance in place. Recalculate the score once a year and on any contract amendment.",
+  lowA:"No",lowW:"Desk review every year",
+  lowWhy:"The audit right stays in the contract. Go on site if an event in section 3 occurs, or at least every third year.",
+  midA:"Yes",midW:"Every second year",
+  midWhy:"In the years in between, run a desk review supported by evidence, not a provider statement.",
+  highA:"Yes",highW:"Every year",
+  highWhy:"Certificates and desk review do not give enough assurance for this risk profile.",
+  nowA:"Yes, now",nowW:"Outside the regular cycle",
+  nowWhy:"An event in section 3 has occurred: "},
+ bs:{h1a:"Prije nego odete.",h1b:"Trijaža dobavljača IKT usluga.",
+  lede:"Odluka da li dobavljaču IKT usluga treba on-site pregled informacione sigurnosti, i koje DORA obaveze iz toga slijede.",
+  ph:["Dobavljač","IKT usluga","Vlasnik ugovora"],
+  s1t:"1. Obuhvat",s1d:"Ako nijedno od ovo troje ne važi, on-site pregled nije potreban.",
+  s2t:"2. Parametri rizika",s2d:"Ponderisani prosjek na skali 1 do 5. Pristup i podaci se boduju jednom u sekciji 1 i ovdje se ponovo koriste.",
+  s3t:"3. Događaji koji obavezuju pregled",s3d:"Bilo koji označen događaj znači pregled odmah, bez obzira na skor.",
+  foot:"Radi lokalno u pretraživaču. Ništa ne napušta uređaj. Rezultat podržava odluku; obim i učestalost odobrava funkcija koja prati ugovor prema članu 5(3) DORA.",
+  kQ:"Da li ovom dobavljaču treba on-site pregled?",
+  scoreT:"ponderisani skor rizika<br>skala 1 do 5",
+  hObl:"Regulatorne obaveze",hSc:"Obim pregleda",
+  oblE:"Prikazuje se nakon sekcije 1.",scE:"Prikazuje se kada je pregled potreban.",
+  bPrint:"Odštampaj zapis",bCopy:"Kopiraj sažetak",bClear:"Očisti",copied:"Kopirano",select:"Odaberite",
+  waitA:"Još nema odgovora",waitW:"Odgovorite na tri pitanja u sekciji 1.",
+  incomplete:" Skor je nepotpun, nisu popunjeni svi parametri.",
+  noA:"Ne",noW:"Ponovna procjena jednom godišnje",
+  noWhy:"Usluga ne podržava kritičnu ili važnu funkciju, nema privilegovanog pristupa ni ličnih podataka klijenata. Uvjeravanje se gradi na ugovornom izvještavanju i sertifikatima.",
+  minA:"Ne",minW:"Sertifikati i izvještaji su dovoljni",
+  minWhy:"Nizak skor uz važeće nezavisno uvjeravanje. Skor se ponovo računa jednom godišnje i pri svakoj izmjeni ugovora.",
+  lowA:"Ne",lowW:"Dokumentarni pregled svake godine",
+  lowWhy:"Pravo revizije ostaje u ugovoru. Na lokaciju se ide ako nastupi događaj iz sekcije 3, ili najmanje svake treće godine.",
+  midA:"Da",midW:"Svake druge godine",
+  midWhy:"U godinama između, dokumentarni pregled sa dokazima, ne izjava dobavljača.",
+  highA:"Da",highW:"Svake godine",
+  highWhy:"Sertifikati i dokumentarni pregled ne daju dovoljno uvjeravanja za ovaj profil rizika.",
+  nowA:"Da, odmah",nowW:"Van redovnog ciklusa",
+  nowWhy:"Nastupio je događaj iz sekcije 3: "}
+};
+
+/* questions */
+const GATE=[
+{id:"cif",
+ en:{lab:"Does the ICT service support a critical or important function?",
+  g:"Drives most of the obligations that follow. In: core banking, card processing, payment initiation, e-banking, AML monitoring, the data centre hosting them. Out: marketing analytics, room booking.",
+  reg:"Art. 3(22), 30(3), 28(8)"},
+ bs:{lab:"Da li IKT usluga podržava kritičnu ili važnu funkciju (CIF)?",
+  g:"Pokreće većinu obaveza koje slijede. Unutra: core, kartično poslovanje, iniciranje plaćanja, e-bankarstvo, AML monitoring, data centar koji ih hostuje. Vani: marketing analitika, rezervacija sala.",
+  reg:"čl. 3(22), 30(3), 28(8)"},
+ opts:[["ne",{en:"No",bs:"Ne"},0],["proc",{en:"Classification not finished",bs:"Klasifikacija nije završena"},1],["da",{en:"Yes",bs:"Da"},1]]},
+{id:"acc",
+ en:{lab:"What access does the provider have to the bank's environment or data?",
+  g:"Access level sets the blast radius. A vendor engineer with a domain admin account connecting over their own VPN, outside PAM, can do insider-level damage.",
+  reg:"Art. 9(4)(c), 30(3)(e)"},
+ bs:{lab:"Kakav pristup dobavljač ima okruženju ili podacima banke?",
+  g:"Nivo pristupa određuje domet štete. Inženjer dobavljača sa domain admin nalogom koji se spaja vlastitim VPN-om, izvan PAM-a, može napraviti štetu na nivou insajdera.",
+  reg:"čl. 9(4)(c), 30(3)(e)"},
+ opts:[["1",{en:"No access",bs:"Nema pristupa"},1],["2",{en:"Read-only",bs:"Samo čitanje"},2],
+   ["3",{en:"Standard user access",bs:"Redovan korisnički pristup"},3],
+   ["4",{en:"Privileged access to production",bs:"Privilegovan pristup produkciji"},4],
+   ["5",{en:"Privileged remote access outside PAM",bs:"Privilegovan udaljeni pristup izvan PAM-a"},5]]},
+{id:"dat",
+ en:{lab:"What bank data does the provider process or store?",
+  g:"Sets the regulatory exposure and the depth of the review. A code repository holds no customer data but may hold credentials, which belongs in the top half of the scale.",
+  reg:"Art. 30(2)(c), 30(2)(d), GDPR Art. 28"},
+ bs:{lab:"Koje podatke banke dobavljač obrađuje ili pohranjuje?",
+  g:"Određuje regulatornu izloženost i dubinu pregleda. Repozitorij koda nema podatke klijenata ali može imati kredencijale, što spada u gornju polovinu skale.",
+  reg:"čl. 30(2)(c), 30(2)(d), GDPR čl. 28"},
+ opts:[["1",{en:"No bank data",bs:"Nema podataka banke"},1],["2",{en:"Internal, unclassified",bs:"Interni, neklasifikovani"},2],
+   ["3",{en:"Confidential business data",bs:"Povjerljivi poslovni podaci"},3],
+   ["4",{en:"Customer personal data",bs:"Lični podaci klijenata"},4],
+   ["5",{en:"Personal data at scale, or payment data",bs:"Lični podaci u obimu ili platni podaci"},5]]}
+];
+
+const PARAMS=[
+{id:"rto",w:20,
+ en:{lab:"How critical is the function, by RTO from the business impact analysis?",
+  g:"Already approved through your BIA, so the provider cannot argue with it. No RTO set scores 4, because a missing figure is not low risk.",reg:"Art. 11(6), 3(22)"},
+ bs:{lab:"Koliko je funkcija kritična, prema RTO-u iz analize uticaja?",
+  g:"Već odobreno kroz BIA, pa dobavljač oko toga ne može polemisati. Nedefinisan RTO se boduje sa 4, jer nedostatak podatka nije niži rizik.",reg:"čl. 11(6), 3(22)"},
+ opts:[["2",{en:"Over 72 hours",bs:"Duži od 72 sata"},2],["3",{en:"24 to 72 hours",bs:"24 do 72 sata"},3],
+   ["4",{en:"4 to 24 hours",bs:"4 do 24 sata"},4],["5",{en:"Up to 4 hours",bs:"Do 4 sata"},5],
+   ["4u",{en:"No RTO defined",bs:"RTO nije definisan"},4]]},
+{id:"assur",w:15,
+ en:{lab:"What independent assurance does the bank hold?",
+  g:"A certificate counts only if its scope covers the service you buy and it is current. ISO 27001 covering head office but not the data centre running your service changes nothing.",reg:"Art. 30(3)(e)(ii)"},
+ bs:{lab:"Kojim nezavisnim uvjeravanjem banka raspolaže?",
+  g:"Sertifikat vrijedi samo ako obuhvat pokriva uslugu koju kupujete i ako je aktuelan. ISO 27001 koji pokriva sjedište ali ne i data centar u kojem radi vaša usluga ne mijenja ništa.",reg:"čl. 30(3)(e)(ii)"},
+ opts:[["1",{en:"SOC 2 Type II or equivalent, scope covers the service, under 12 months, no exceptions",bs:"SOC 2 Type II ili ekvivalent, obuhvat pokriva uslugu, mlađi od 12 mjeseci, bez izuzetaka"},1],
+   ["2",{en:"ISO/IEC 27001 with scope covering the service",bs:"ISO/IEC 27001 sa obuhvatom koji pokriva uslugu"},2],
+   ["3",{en:"Partial scope, or older than 18 months",bs:"Djelimičan obuhvat ili stariji od 18 mjeseci"},3],
+   ["4",{en:"Only a questionnaire or self-assessment",bs:"Samo upitnik ili samoprocjena"},4],
+   ["5",{en:"None",bs:"Nema ništa"},5]]},
+{id:"exit",w:10,
+ en:{lab:"How replaceable is the provider, how hard is exit?",
+  g:"If you cannot leave, every finding has to be fixed with this provider instead of by switching. A proprietary core with no standard export sits at the top; email filtering with three competitors at the bottom.",reg:"Art. 28(8), 30(3)(f)"},
+ bs:{lab:"Koliko je dobavljač zamjenjiv, koliko je težak izlaz?",
+  g:"Ako ne možete otići, svaki nalaz se rješava sa ovim dobavljačem, a ne promjenom dobavljača. Zatvorena core platforma bez standardnog izvoza je na vrhu; filtriranje pošte sa tri konkurenta na dnu.",reg:"čl. 28(8), 30(3)(f)"},
+ opts:[["1",{en:"Migration under 3 months",bs:"Migracija do 3 mjeseca"},1],["2",{en:"3 to 6 months",bs:"3 do 6 mjeseci"},2],
+   ["3",{en:"6 to 12 months",bs:"6 do 12 mjeseci"},3],["4",{en:"Over 12 months",bs:"Duže od 12 mjeseci"},4],
+   ["5",{en:"No workable alternative",bs:"Nema izvodive alternative"},5]]},
+{id:"hist",w:10,
+ en:{lab:"Incident and service level history, last 24 months",
+  g:"Evidence you already hold, and a formal termination ground. Two unplanned outages, a late incident notification, or an overdue finding from the last review all belong here.",reg:"Art. 28(7), 19"},
+ bs:{lab:"Historija incidenata i nivoa usluge, zadnja 24 mjeseca",
+  g:"Dokaz koji već imate, i formalni osnov za raskid. Dva neplanirana prekida, kasno obavještenje o incidentu, ili nalaz iz zadnjeg pregleda kojem je istekao rok.",reg:"čl. 28(7), 19"},
+ opts:[["1",{en:"No incidents, no SLA breaches",bs:"Bez incidenata i kršenja SLA"},1],
+   ["2",{en:"Occasional SLA breaches, no service impact",bs:"Povremena kršenja SLA bez uticaja"},2],
+   ["3",{en:"One incident, no impact on the bank",bs:"Jedan incident bez uticaja na banku"},3],
+   ["4",{en:"One incident with impact on the bank",bs:"Jedan incident sa uticajem na banku"},4],
+   ["5",{en:"Repeated incidents, or findings still open",bs:"Ponovljeni incidenti ili otvoreni nalazi"},5]]},
+{id:"sub",w:5,
+ en:{lab:"Subcontracting",
+  g:"An audit right is worth what it is worth at the deepest layer that actually runs the service. A gateway on a hyperscaler plus a third party for document checks means three layers under one contract.",reg:"Art. 29(2), Del. Reg. (EU) 2025/532"},
+ bs:{lab:"Podugovaranje",
+  g:"Pravo revizije vrijedi onoliko koliko vrijedi na najdubljem sloju koji stvarno pruža uslugu. Gateway na hyperscaleru plus treća strana za provjeru dokumenata znači tri sloja pod jednim ugovorom.",reg:"čl. 29(2), Del. uredba (EU) 2025/532"},
+ opts:[["1",{en:"No subcontracting",bs:"Ne podugovara"},1],["2",{en:"Subcontracts, but not CIF parts",bs:"Podugovara, ali ne CIF dijelove"},2],
+   ["3",{en:"Subcontracts CIF, chain known and contracted",bs:"Podugovara CIF, lanac poznat i ugovoren"},3],
+   ["4",{en:"Subcontracts CIF, chain partly known",bs:"Podugovara CIF, lanac djelimično poznat"},4],
+   ["5",{en:"No consent, or chain unknown",bs:"Bez saglasnosti ili lanac nepoznat"},5]]},
+{id:"juris",w:5,
+ en:{lab:"Where the service is delivered and data is stored",
+  g:"What matters is whether access, inspection and audit rights can actually be exercised there, not the name of the country. Storage in a contracted location means little if administrators log in from somewhere the contract does not cover.",reg:"Art. 30(2)(b), 30(3)(e)(i)"},
+ bs:{lab:"Gdje se usluga pruža i gdje se podaci pohranjuju",
+  g:"Bitno je da li se prava pristupa, inspekcije i revizije tamo stvarno mogu ostvariti, a ne ime države. Pohrana na ugovorenoj lokaciji malo znači ako se administratori prijavljuju odnekud što ugovor ne pokriva.",reg:"čl. 30(2)(b), 30(3)(e)(i)"},
+ opts:[["1",{en:"Same jurisdiction as the bank, audit rights directly enforceable",bs:"Ista jurisdikcija kao banka, prava revizije direktno provodiva"},1],
+   ["2",{en:"Cross-border, equivalent data protection, audit rights already exercised without obstruction",bs:"Prekogranično, ekvivalentna zaštita podataka, prava revizije već ostvarena bez smetnji"},2],
+   ["3",{en:"Cross-border, audit rights contracted but never tested",bs:"Prekogranično, prava revizije ugovorena ali nikad testirana"},3],
+   ["4",{en:"Administrative access from a location the contract does not cover, or location known only at region level",bs:"Administrativni pristup sa lokacije koju ugovor ne pokriva, ili lokacija poznata samo na nivou regije"},4],
+   ["5",{en:"Audit or inspection rights contractually limited, or location not known",bs:"Prava revizije ili inspekcije ugovorno ograničena, ili lokacija nije poznata"},5]]},
+{id:"last",w:5,
+ en:{lab:"Time since the last review of this provider",
+  g:"Assurance decays. Controls verified three years ago say little about an environment that has since migrated or changed owners.",reg:"Art. 28(1)(a), 6(8)"},
+ bs:{lab:"Vrijeme od zadnjeg pregleda ovog dobavljača",
+  g:"Uvjeravanje zastarijeva. Kontrole provjerene prije tri godine malo govore o okruženju koje je u međuvremenu migrirano ili promijenilo vlasnika.",reg:"čl. 28(1)(a), 6(8)"},
+ opts:[["1",{en:"Under 12 months",bs:"Manje od 12 mjeseci"},1],["2",{en:"12 to 24 months",bs:"12 do 24 mjeseca"},2],
+   ["3",{en:"24 to 36 months",bs:"24 do 36 mjeseci"},3],["4",{en:"Over 36 months",bs:"Više od 36 mjeseci"},4],
+   ["5",{en:"Never reviewed",bs:"Nikad nije pregledan"},5]]}
+];
+
+const TRIGGERS=[
+{id:"t1",en:{lab:"Change of ownership, merger or acquisition in the last 12 months",
+  g:"New owners change security teams, consolidate data centres and renegotiate subcontracts.",reg:"Art. 28(7)(b)"},
+ bs:{lab:"Promjena vlasništva, spajanje ili preuzimanje u zadnjih 12 mjeseci",
+  g:"Novi vlasnici mijenjaju sigurnosne timove, konsoliduju data centre i ponovo pregovaraju podugovore.",reg:"čl. 28(7)(b)"}},
+{id:"t2",en:{lab:"Security incident at the provider affecting the bank or its customers",
+  g:"The review is where you verify that the stated root cause is the real one.",reg:"Art. 19, 28(7)(c)"},
+ bs:{lab:"Sigurnosni incident kod dobavljača sa uticajem na banku ili klijente",
+  g:"Pregled je mjesto gdje provjeravate da li je navedeni osnovni uzrok stvarni uzrok.",reg:"čl. 19, 28(7)(c)"}},
+{id:"t3",en:{lab:"Migration or major change to the architecture of the service",
+  g:"A migration invalidates the previous review: new hosting, new segmentation, new administrators.",reg:"Art. 8(6), 30(3)(b)"},
+ bs:{lab:"Migracija ili veća promjena arhitekture usluge",
+  g:"Migracija poništava prethodni pregled: novi hosting, nova segmentacija, novi administratori.",reg:"čl. 8(6), 30(3)(b)"}},
+{id:"t4",en:{lab:"Instruction from the banking agency, the Group, or an audit finding",
+  g:"Record the source in the review report instead of folding it into the annual plan.",reg:"Art. 6(8), 5(2)(g)"},
+ bs:{lab:"Uputa Agencije za bankarstvo, Grupe, ili nalaz revizije",
+  g:"Izvor navedite u izvještaju o pregledu umjesto da ga utopite u godišnji plan.",reg:"čl. 6(8), 5(2)(g)"}},
+{id:"t5",en:{lab:"First year of a new contract supporting a critical or important function",
+  g:"Verify that what was promised in due diligence was actually built, while leverage still exists.",reg:"Art. 28(4), 30(3)(a)"},
+ bs:{lab:"Prva godina novog ugovora koji podržava kritičnu ili važnu funkciju",
+  g:"Provjerite da je ono što je obećano u dubinskoj analizi stvarno izgrađeno, dok poluga još postoji.",reg:"čl. 28(4), 30(3)(a)"}},
+{id:"t6",en:{lab:"Signs of financial distress or going concern risk",
+  g:"Distress precedes staff departures, deferred maintenance and quietly dropped subcontracts.",reg:"Art. 28(7)(b), 28(8)"},
+ bs:{lab:"Indikacije finansijskih teškoća ili rizika kontinuiteta poslovanja",
+  g:"Teškoće prethode odlascima ljudi, odgođenom održavanju i tiho ukinutim podugovorima.",reg:"čl. 28(7)(b), 28(8)"}},
+{id:"t7",en:{lab:"The provider refused, delayed or limited a contracted audit right",
+  g:"A finding in itself, not a scheduling problem. These rights must not be impeded by other arrangements or internal policies.",reg:"Art. 30(3)(e)(i)"},
+ bs:{lab:"Dobavljač je odbio, odgodio ili ograničio ugovoreno pravo revizije",
+  g:"Nalaz sam po sebi, a ne problem termina. Ta prava se ne smiju ometati drugim ugovorima ili internim politikama.",reg:"čl. 30(3)(e)(i)"}}
+];
+
+/* obligations */
+const OB={
+ base:[
+  {a:{en:"Art. 28(1)(a)",bs:"Čl. 28(1)(a)"},en:"Manage third-party ICT risk across the whole contract lifecycle, not only before signature.",bs:"Upravljati rizikom od trećih strana kroz cijeli životni ciklus ugovora, ne samo prije potpisa."},
+  {a:{en:"Art. 28(3)",bs:"Čl. 28(3)"},en:"Keep the register of information current, in the format of Implementing Regulation (EU) 2024/2956, and report it annually.",bs:"Održavati registar informacija ažurnim, po formatu Provedbene uredbe (EU) 2024/2956, i dostavljati ga godišnje."},
+  {a:{en:"Art. 30(2)",bs:"Čl. 30(2)"},en:"Baseline contract clauses: service description, locations with prior notice of change, data protection, access and return of data, service levels, assistance on incidents, cooperation with authorities, termination, subcontracting.",bs:"Osnovne ugovorne klauzule: opis usluge, lokacije uz prethodnu najavu promjene, zaštita podataka, pristup i povrat podataka, nivoi usluge, pomoć kod incidenta, saradnja sa nadležnim organima, raskid, podugovaranje."}],
+ cif:[
+  {a:{en:"Art. 28(2)",bs:"Čl. 28(2)"},en:"Review the policy on ICT services supporting critical or important functions at least annually.",bs:"Politiku o IKT uslugama koje podržavaju kritične ili važne funkcije preispitati najmanje godišnje."},
+  {a:{en:"Art. 28(3)",bs:"Čl. 28(3)"},en:"Notify the supervisor of a planned contract supporting a critical or important function, and when a function becomes one.",bs:"Obavijestiti regulatora o planiranom ugovoru koji podržava kritičnu ili važnu funkciju, i kada funkcija to postane."},
+  {a:{en:"Art. 30(3)(a)",bs:"Čl. 30(3)(a)"},en:"Full service level descriptions with precise quantitative and qualitative targets.",bs:"Pun opis nivoa usluge sa preciznim kvantitativnim i kvalitativnim ciljevima."},
+  {a:{en:"Art. 30(3)(b)",bs:"Čl. 30(3)(b)"},en:"Notice periods and reporting duties, including any development that may materially affect the service.",bs:"Rokovi obavještavanja i izvještajne obaveze, uključujući svaki razvoj koji može materijalno uticati na uslugu."},
+  {a:{en:"Art. 30(3)(c)",bs:"Čl. 30(3)(c)"},en:"Evidence that the provider implements and tests contingency plans and applies appropriate ICT security measures.",bs:"Dokaz da dobavljač implementira i testira planove kontinuiteta i primjenjuje odgovarajuće IKT sigurnosne mjere."},
+  {a:{en:"Art. 30(3)(d)",bs:"Čl. 30(3)(d)"},en:"Participation and full cooperation in the bank's threat-led penetration testing.",bs:"Učešće i puna saradnja u TLPT testiranju banke."},
+  {a:{en:"Art. 30(3)(e)",bs:"Čl. 30(3)(e)"},en:"The legal basis for the visit: unrestricted access, inspection and audit rights for the bank, an appointed third party and the supervisor, the right to take copies on site, full cooperation, and details on scope, procedures and frequency. Not to be limited by other arrangements or internal policies.",bs:"Pravni osnov za posjetu: neograničena prava pristupa, inspekcije i revizije za banku, imenovanu treću stranu i regulatora, pravo uzimanja kopija na licu mjesta, puna saradnja, i detalji o obuhvatu, procedurama i učestalosti. Ne smiju se ograničavati drugim ugovorima ni internim politikama."},
+  {a:{en:"Art. 30(3)(f)",bs:"Čl. 30(3)(f)"},en:"Exit strategy with a mandatory transition period during which the provider keeps delivering.",bs:"Izlazna strategija sa obaveznim tranzicijskim periodom tokom kojeg dobavljač nastavlja pružati uslugu."},
+  {a:{en:"Art. 28(7)",bs:"Čl. 28(7)"},en:"Monitor whether grounds for termination have arisen, including evidenced weaknesses in the provider's ICT risk management.",bs:"Pratiti da li su nastupili osnovi za raskid, uključujući dokazane slabosti u upravljanju IKT rizikom."},
+  {a:{en:"Art. 28(8)",bs:"Čl. 28(8)"},en:"An exit plan that is documented, tested and periodically reviewed, with an identified alternative.",bs:"Izlazni plan koji je dokumentovan, testiran i periodično preispitivan, sa identifikovanom alternativom."},
+  {a:{en:"Art. 5(2)(f), 5(3)",bs:"Čl. 5(2)(f), 5(3)"},en:"The management body approves the policy; a designated function or senior manager monitors these contracts.",bs:"Uprava odobrava politiku; imenovana funkcija ili viši rukovodilac prati ove ugovore."},
+  {a:{en:"Art. 6(8)",bs:"Čl. 6(8)"},en:"Internal audit covers this segment, with formal follow-up on findings.",bs:"Interna revizija pokriva ovaj segment, uz formalno praćenje nalaza."},
+  {a:{en:"Art. 8(5), 8(6)",bs:"Čl. 8(5), 8(6)"},en:"Inventory of processes dependent on third parties, updated on every major change.",bs:"Inventar procesa zavisnih od trećih strana, ažuriran pri svakoj većoj promjeni."},
+  {a:{en:"Art. 19",bs:"Čl. 19"},en:"Provider-related incidents enter the classification and reporting regime, with contracted access to evidence.",bs:"Incidenti povezani sa dobavljačem ulaze u režim klasifikacije i prijave, uz ugovoreni pristup dokazima."}],
+ noncif:{a:{en:"Art. 28(1)(a)",bs:"Čl. 28(1)(a)"},en:"Not a critical or important function, but privileged access or personal data keeps the provider under continuous monitoring.",bs:"Nije kritična ili važna funkcija, ali privilegovan pristup ili lični podaci drže dobavljača pod kontinuiranim praćenjem."},
+ cond:{
+  sub:{a:{en:"Art. 29(2), Del. Reg. 2025/532",bs:"Čl. 29(2), Del. uredba 2025/532"},en:"Assess the subcontracting chain and whether audit rights are enforceable down the whole chain.",bs:"Procijeniti lanac podugovaranja i provodivost prava revizije niz cijeli lanac."},
+  juris:{a:{en:"Art. 30(2)(b)",bs:"Čl. 30(2)(b)"},en:"Prior notification of any change of location, and documented proof of how Article 30(3)(e) rights work in that jurisdiction.",bs:"Prethodna najava svake promjene lokacije, i dokumentovan dokaz kako prava iz člana 30(3)(e) funkcionišu u toj jurisdikciji."},
+  assur:{a:{en:"Art. 30(3)(e)(ii)",bs:"Čl. 30(3)(e)(ii)"},en:"Relying on a certificate is not an option here. If your own review is not feasible, document the alternative assurance level and justify it.",bs:"Oslanjanje na sertifikat ovdje nije opcija. Ako vlastiti pregled nije izvodiv, dokumentovati i obrazložiti alternativni nivo uvjeravanja."},
+  exit:{a:{en:"Art. 28(8)",bs:"Čl. 28(8)"},en:"Exit is hard: test the exit plan and align the transition period with the real duration of a migration.",bs:"Izlaz je otežan: testirati izlazni plan i uskladiti tranzicijski period sa stvarnim trajanjem migracije."},
+  hist:{a:{en:"Art. 28(7)(c)",bs:"Čl. 28(7)(c)"},en:"Recorded weaknesses feed the termination assessment and need a documented remediation plan with deadlines.",bs:"Evidentirane slabosti ulaze u procjenu raskida i traže dokumentovan plan otklanjanja sa rokovima."},
+  acc:{a:{en:"Art. 9(4)(c)",bs:"Čl. 9(4)(c)"},en:"Least-privilege access for provider accounts, with logging and periodic recertification.",bs:"Pristup dobavljača po najmanjoj privilegiji, uz evidentiranje i periodičnu recertifikaciju."}}
+};
+
+const SCOPE={
+ base:[
+  {en:"Access management and privileged accounts, provider accounts included",bs:"Upravljanje pristupom i privilegovanim nalozima, uključujući naloge dobavljača"},
+  {en:"Logging, monitoring and detection, with log retention and protection",bs:"Logovanje, monitoring i detekcija, uz čuvanje i zaštitu logova"},
+  {en:"Vulnerability and patch management, latest scan and remediation deadlines",bs:"Upravljanje ranjivostima i zakrpama, zadnje skeniranje i rokovi otklanjanja"},
+  {en:"Segregation of the bank's data from other clients' data",bs:"Segregacija podataka banke od podataka drugih klijenata"},
+  {en:"Change management and testing before production release",bs:"Upravljanje promjenama i testiranje prije produkcije"},
+  {en:"Business continuity and recovery, report from the last test",bs:"Kontinuitet i oporavak, zapisnik sa zadnjeg testa"},
+  {en:"Incident notification procedure, deadlines and channels",bs:"Procedura obavještavanja o incidentu, rokovi i kanali"},
+  {en:"Management of subcontractors and evidence of their oversight",bs:"Upravljanje podugovaračima i dokaz o njihovom nadzoru"}],
+ dat:{en:"Personal data protection, encryption, key management, deletion on expiry",bs:"Zaštita ličnih podataka, kriptografija, upravljanje ključevima, brisanje po isteku"},
+ acc:{en:"Remote access path, brokering, session recording, revocation on leaver",bs:"Način udaljenog pristupa, posredovanje, snimanje sesija, ukidanje pri odlasku"},
+ juris:{en:"Actual processing and storage location, and administrative access from outside the contracted locations",bs:"Stvarna lokacija obrade i pohrane, i administrativni pristup izvan ugovorenih lokacija"},
+ hist:{en:"Status of remediation of earlier findings and root causes",bs:"Status otklanjanja ranijih nalaza i osnovnih uzroka"},
+ exit:{en:"Exit feasibility: data format and portability, documentation, dependencies",bs:"Izvodivost izlaza: format i prenosivost podataka, dokumentacija, zavisnosti"},
+ last:{en:"Whether the Article 30(2) and 30(3) clauses are applied in practice, not only signed",bs:"Da li se klauzule iz člana 30(2) i 30(3) primjenjuju u praksi, a ne samo potpisane"}
+};
+
+const HOW={
+ en:{link:"How is this calculated?",
+  title:"How the score works",
+  html:`<p>Nine answers, each scored 1 to 5. The score is their weighted average. Above 4.0 means an on-site review every year, above 3.0 every second year, below that a desk review.</p>
+  <h4>The weights</h4>
+  <div class="wrow top"><span class="nm">Criticality (RTO)</span><span class="tr"><i style="width:100%"></i></span><span class="pc">20%</span></div>
+  <div class="wrow"><span class="nm">Level of access</span><span class="tr"><i style="width:75%"></i></span><span class="pc">15%</span></div>
+  <div class="wrow"><span class="nm">Sensitivity of data</span><span class="tr"><i style="width:75%"></i></span><span class="pc">15%</span></div>
+  <div class="wrow"><span class="nm">Independent assurance</span><span class="tr"><i style="width:75%"></i></span><span class="pc">15%</span></div>
+  <div class="wrow"><span class="nm">Difficulty of exit</span><span class="tr"><i style="width:50%"></i></span><span class="pc">10%</span></div>
+  <div class="wrow"><span class="nm">Incident history</span><span class="tr"><i style="width:50%"></i></span><span class="pc">10%</span></div>
+  <div class="wrow"><span class="nm">Subcontracting</span><span class="tr"><i style="width:25%"></i></span><span class="pc">5%</span></div>
+  <div class="wrow"><span class="nm">Location</span><span class="tr"><i style="width:25%"></i></span><span class="pc">5%</span></div>
+  <div class="wrow"><span class="nm">Time since last review</span><span class="tr"><i style="width:25%"></i></span><span class="pc">5%</span></div>
+  <h4>Why criticality carries the most</h4>
+  <p>Everything in the regulation is anchored to how critical the function is, and the RTO is the one figure that is already approved through the business impact analysis. It is not negotiable with the provider, and it is the number a supervisor asks for first.</p>
+  <h4>The middle group</h4>
+  <p>Access, data and existing assurance together answer two questions: how much damage is possible, and how much we already know without going there. Weak assurance pushes the score up even when everything else looks calm.</p>
+  <h4>The small group</h4>
+  <p>Subcontracting, location and time since the last review rarely change the decision on their own. They shape what the visit should cover.</p>
+  <h4>Two things that bypass the score</h4>
+  <p>Privileged access to production or customer personal data puts a provider in scope whatever the score says. And any event in section 3 means a review now, with the score not consulted at all.</p>`},
+ bs:{link:"Kako se ovo računa?",
+  title:"Kako radi skor",
+  html:`<p>Devet odgovora, svaki bodovan od 1 do 5. Skor je njihov ponderisani prosjek. Preko 4.0 znači on-site pregled svake godine, preko 3.0 svake druge godine, ispod toga dokumentarni pregled.</p>
+  <h4>Ponderi</h4>
+  <div class="wrow top"><span class="nm">Kritičnost (RTO)</span><span class="tr"><i style="width:100%"></i></span><span class="pc">20%</span></div>
+  <div class="wrow"><span class="nm">Nivo pristupa</span><span class="tr"><i style="width:75%"></i></span><span class="pc">15%</span></div>
+  <div class="wrow"><span class="nm">Osjetljivost podataka</span><span class="tr"><i style="width:75%"></i></span><span class="pc">15%</span></div>
+  <div class="wrow"><span class="nm">Nezavisno uvjeravanje</span><span class="tr"><i style="width:75%"></i></span><span class="pc">15%</span></div>
+  <div class="wrow"><span class="nm">Težina izlaza</span><span class="tr"><i style="width:50%"></i></span><span class="pc">10%</span></div>
+  <div class="wrow"><span class="nm">Historija incidenata</span><span class="tr"><i style="width:50%"></i></span><span class="pc">10%</span></div>
+  <div class="wrow"><span class="nm">Podugovaranje</span><span class="tr"><i style="width:25%"></i></span><span class="pc">5%</span></div>
+  <div class="wrow"><span class="nm">Lokacija</span><span class="tr"><i style="width:25%"></i></span><span class="pc">5%</span></div>
+  <div class="wrow"><span class="nm">Vrijeme od zadnjeg pregleda</span><span class="tr"><i style="width:25%"></i></span><span class="pc">5%</span></div>
+  <h4>Zašto kritičnost nosi najviše</h4>
+  <p>Sve u regulativi je vezano za to koliko je funkcija kritična, a RTO je jedini broj koji je već odobren kroz analizu uticaja na poslovanje. O njemu se ne pregovara sa dobavljačem i to je broj koji regulator prvi traži.</p>
+  <h4>Srednja grupa</h4>
+  <p>Pristup, podaci i postojeće uvjeravanje zajedno odgovaraju na dva pitanja: kolika je moguća šteta i koliko već znamo bez odlaska na lokaciju. Slabo uvjeravanje diže skor i kada je sve ostalo mirno.</p>
+  <h4>Mala grupa</h4>
+  <p>Podugovaranje, lokacija i vrijeme od zadnjeg pregleda rijetko sami mijenjaju odluku. Oni oblikuju šta posjeta treba da pokrije.</p>
+  <h4>Dvije stvari koje zaobilaze skor</h4>
+  <p>Privilegovan pristup produkciji ili lični podaci klijenata stavljaju dobavljača u obuhvat bez obzira na skor. A bilo koji događaj iz sekcije 3 znači pregled odmah, pri čemu se skor uopšte ne gleda.</p>`}
+};
+
+function openHow(){
+  document.getElementById("howT").textContent=HOW[L].title;
+  document.getElementById("howBody").innerHTML=HOW[L].html;
+  document.getElementById("how").hidden=false;
+}
+function closeHow(){document.getElementById("how").hidden=true;}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeHow();});
+
+let L="en";
+
+function qNode(q,showW){
+  const d=document.createElement("div");d.className="q";d.dataset.qid=q.id;
+  d.innerHTML='<div class="qhead"><div class="qlab"></div>'+(showW?'<span class="wt">'+q.w+'%</span>':'')+'</div>'+
+    '<div class="guide"><p class="gw"></p><span class="reg"></span></div><select id="'+q.id+'" class="unset"></select>';
+  d.querySelector("select").addEventListener("change",e=>{e.target.classList.toggle("unset",!e.target.value);evaluate();});
+  return d;
+}
+function trgNode(t){
+  const d=document.createElement("div");d.className="trg";d.dataset.tid=t.id;
+  d.innerHTML='<label><input type="checkbox" id="'+t.id+'"><span class="tlab"></span></label>'+
+    '<div class="guide"><p class="gw"></p><span class="reg"></span></div>';
+  d.querySelector("input").addEventListener("change",evaluate);
+  return d;
+}
+function build(){
+  const g=document.getElementById("gate");GATE.forEach(q=>g.appendChild(qNode(q,false)));
+  const p=document.getElementById("params");PARAMS.forEach(q=>p.appendChild(qNode(q,true)));
+  const t=document.getElementById("trig");TRIGGERS.forEach(x=>t.appendChild(trgNode(x)));
+  document.getElementById("mDat").value=new Date().toISOString().slice(0,10);
+  setLang("en");
+}
+function setLang(l){
+  L=l;document.documentElement.lang=l;
+  document.getElementById("btnEN").classList.toggle("on",l==="en");
+  document.getElementById("btnBS").classList.toggle("on",l==="bs");
+  const t=T[l];
+  document.getElementById("h1a").textContent=t.h1a;
+  document.getElementById("h1b").textContent=t.h1b;
+  document.getElementById("lede").textContent=t.lede;
+  document.getElementById("mDob").placeholder=t.ph[0];
+  document.getElementById("mUsl").placeholder=t.ph[1];
+  document.getElementById("mVla").placeholder=t.ph[2];
+  ["s1t","s1d","s2t","s2d","s3t","s3d","foot","kQ","hObl","hSc","oblE","scE"].forEach(k=>document.getElementById(k).textContent=t[k]);
+  document.getElementById("scoreT").innerHTML=t.scoreT;
+  document.getElementById("bPrint").textContent=t.bPrint;
+  document.getElementById("bCopy").textContent=t.bCopy;
+  document.getElementById("bClear").textContent=t.bClear;
+  document.getElementById("bHow").textContent=HOW[l].link;
+  if(!document.getElementById("how").hidden)openHow();
+  GATE.concat(PARAMS).forEach(q=>{
+    const n=document.querySelector('.q[data-qid="'+q.id+'"]');
+    n.querySelector(".qlab").textContent=q[l].lab;
+    n.querySelector(".gw").textContent=q[l].g;
+    n.querySelector(".reg").textContent=q[l].reg;
+    const s=n.querySelector("select"),i=s.selectedIndex;
+    s.innerHTML='<option value="">'+t.select+'</option>'+q.opts.map(o=>'<option value="'+o[2]+'" data-k="'+o[0]+'">'+o[1][l]+'</option>').join("");
+    if(i>0)s.selectedIndex=i;
+    s.classList.toggle("unset",!s.value);
+  });
+  TRIGGERS.forEach(x=>{
+    const n=document.querySelector('.trg[data-tid="'+x.id+'"]');
+    n.querySelector(".tlab").textContent=x[l].lab;
+    n.querySelector(".gw").textContent=x[l].g;
+    n.querySelector(".reg").textContent=x[l].reg;
+  });
+  evaluate();
+}
+function val(id){const e=document.getElementById(id);return e.value?Number(e.value):null;}
+function kk(id){const e=document.getElementById(id);return e.selectedIndex>0?e.options[e.selectedIndex].dataset.k:null;}
+
+function setVerdict(cls,ico,a,w,why){
+  const V=document.getElementById("verdict");
+  V.className="verdict "+cls;
+  document.getElementById("res").className="res s-"+cls.replace("v-","");
+  document.getElementById("vico").innerHTML=ICO[ico];
+  document.getElementById("ans").textContent=a;
+  document.getElementById("when").textContent=w;
+  document.getElementById("when").style.display=w?"inline-block":"none";
+  document.getElementById("why").textContent=why;
+}
+
+function evaluate(){
+  const t=T[L];
+  const cifK=kk("cif"),acc=val("acc"),dat=val("dat");
+  const obl=document.getElementById("obl"),oblE=document.getElementById("oblE");
+  const sc=document.getElementById("sc"),scE=document.getElementById("scE");
+  obl.innerHTML="";sc.innerHTML="";
+
+  if(cifK===null||acc===null||dat===null){
+    setVerdict("v-none","none",t.waitA,"",t.waitW);
+    document.getElementById("scoreN").textContent="—";
+    document.getElementById("bar").style.width="0%";
+    oblE.style.display="block";scE.style.display="block";return;
+  }
+  oblE.style.display="none";
+
+  const isCIF=(cifK==="da"||cifK==="proc");
+  const inScope=isCIF||acc>=4||dat>=4;
+
+  let sum=acc*15+dat*15,wsum=30,missing=false;const s={acc:acc,dat:dat};
+  PARAMS.forEach(q=>{const v=val(q.id);if(v===null)missing=true;else{s[q.id]=v;sum+=v*q.w;wsum+=q.w;}});
+  const score=sum/wsum;
+  document.getElementById("scoreN").textContent=score.toFixed(2)+(missing?"*":"");
+  document.getElementById("bar").style.width=((score-1)/4*100)+"%";
+
+  const trg=TRIGGERS.filter(x=>document.getElementById(x.id).checked);
+  let needsReview=true;
+
+  if(!inScope){ setVerdict("v-no","no",t.noA,t.noW,t.noWhy); needsReview=false; }
+  else if(trg.length){ setVerdict("v-now","now",t.nowA,t.nowW,t.nowWhy+trg.map(x=>x[L].lab.toLowerCase()).join("; ")+"."); }
+  else if(score>=4.0){ setVerdict("v-now","plan",t.highA,t.highW,t.highWhy); }
+  else if(score>=3.0){ setVerdict("v-plan","plan",t.midA,t.midW,t.midWhy); }
+  else if(score>=2.0){ setVerdict("v-no","no",t.lowA,t.lowW,t.lowWhy); }
+  else { setVerdict("v-no","no",t.minA,t.minW,t.minWhy); }
+  if(missing&&inScope){const w=document.getElementById("why");w.textContent+=t.incomplete;}
+
+  const list=[...OB.base];
+  if(isCIF)list.push(...OB.cif); else if(inScope)list.push(OB.noncif);
+  if(s.sub>=3&&isCIF)list.push(OB.cond.sub);
+  if(s.juris>=4)list.push(OB.cond.juris);
+  if(s.assur>=4)list.push(OB.cond.assur);
+  if(s.exit>=4)list.push(OB.cond.exit);
+  if(s.hist>=4)list.push(OB.cond.hist);
+  if(s.acc>=4)list.push(OB.cond.acc);
+  list.forEach(o=>{const li=document.createElement("li");li.innerHTML='<span class="a">'+o.a[L]+'</span> '+o[L];obl.appendChild(li);});
+
+  if(!inScope){scE.style.display="block";return;}
+  scE.style.display="none";
+  const sl=[...SCOPE.base];
+  if(s.dat>=4)sl.push(SCOPE.dat);
+  if(s.acc>=4)sl.push(SCOPE.acc);
+  if(s.juris>=4)sl.push(SCOPE.juris);
+  if(s.hist>=4)sl.push(SCOPE.hist);
+  if(s.exit>=4)sl.push(SCOPE.exit);
+  sl.push(SCOPE.last);
+  sl.forEach(x=>{const li=document.createElement("li");li.textContent=x[L];sc.appendChild(li);});
+}
+
+function copySummary(ev){
+  const t=T[L];
+  const g=id=>{const e=document.getElementById(id);return e.selectedIndex>0?e.options[e.selectedIndex].text:"-";};
+  let o=(L==="en"?"ICT SUPPLIER TRIAGE":"TRIJAZA DOBAVLJACA IKT USLUGA")+"\n";
+  o+=t.ph[0]+": "+(document.getElementById("mDob").value||"-")+"\n";
+  o+=t.ph[1]+": "+(document.getElementById("mUsl").value||"-")+"\n";
+  o+=t.ph[2]+": "+(document.getElementById("mVla").value||"-")+"\n";
+  o+="Date: "+(document.getElementById("mDat").value||"-")+"\n\n";
+  o+=t.kQ+" "+document.getElementById("ans").textContent+" / "+document.getElementById("when").textContent+"\n";
+  o+=document.getElementById("why").textContent+"\n";
+  o+="Score: "+document.getElementById("scoreN").textContent+"\n\n";
+  o+=(L==="en"?"INPUTS":"ULAZNI PARAMETRI")+"\n";
+  GATE.concat(PARAMS).forEach(q=>o+="- "+q[L].lab+"  >>  "+g(q.id)+"\n");
+  const tr=TRIGGERS.filter(x=>document.getElementById(x.id).checked);
+  o+="\n"+(L==="en"?"EVENTS":"DOGADJAJI")+": "+(tr.length?tr.map(x=>x[L].lab).join("; "):(L==="en"?"none":"nema"))+"\n\n";
+  o+=t.hObl.toUpperCase()+"\n";
+  document.querySelectorAll("#obl li").forEach(li=>o+="- "+li.textContent+"\n");
+  o+="\n"+t.hSc.toUpperCase()+"\n";
+  document.querySelectorAll("#sc li").forEach(li=>o+="- "+li.textContent+"\n");
+  navigator.clipboard.writeText(o).then(()=>{const b=ev.target,old=b.textContent;b.textContent=t.copied;setTimeout(()=>b.textContent=old,1400);});
+}
+
+build();
+</script>
+</body>
+</html>
